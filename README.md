@@ -2,6 +2,20 @@
 
 This contains the compose definition for my private website stack. It follows the same design patterns as [JitcomHostedServices](https://github.com/tobi97h/JitcomHostedServices).
 
+The following services are contained in this repository:
+
+* Loki
+* Grafana
+* Personal portfolio page
+* Ghost blog
+* Personal Api
+* Wiki
+* Nexus
+* Gitea
+* Drone
+* Hedgedoc
+* Personal Nginx Webserver
+
 # Init
 
 In this project I am using a loki instance for logging, which uses basic http auth. To generate this file we use the `htpasswd` command line util like so:
