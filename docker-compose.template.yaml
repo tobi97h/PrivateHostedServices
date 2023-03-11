@@ -1,0 +1,170 @@
+version: "3.9"
+services:
+  loki:
+    restart: always
+    image: grafana/loki:2.6.1
+    command: -config.file=/etc/loki/local-config.yaml 
+    networks:
+      - th_net
+  grafana:
+    restart: always
+    image: grafana/grafana:latest
+    volumes:
+      - vgrafana:/var/lib/grafana
+    networks:
+      - th_net
+  coverpage:
+    image: nexus.tobias-huebner.tech/th-coverpage:1.9
+    restart: always
+    networks:
+      - th_net
+  ghost:
+    image: ghost
+    restart: always
+    volumes:
+      - ./vghost:/var/lib/ghost/content
+    environment:
+      - url=https://blog.tobias-huebner.tech
+    networks:
+      - th_net
+  th-api:
+    image: nexus.tobias-huebner.tech/th-api:1.3
+    restart: always
+    volumes:
+      - ./vth-api-file-upload:/files
+    networks:
+      - th_net
+  wiki:
+    user: root
+    restart: always
+    image: nexus.tobias-huebner.tech/th-wiki:0.9
+    depends_on:
+      - wiki-db
+    networks:
+      - th_net
+  wiki-db:
+    user: root
+    restart: always
+    image: mariadb:10.5.6
+    volumes:
+      - ./vwiki-db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=$WIKI_DB_ROOT_PW
+      - MYSQL_DATABASE=wiki
+    networks:
+      - th_net
+  nexus:
+    restart: always
+    user: root
+    image: sonatype/nexus3
+    volumes:
+      - ./vnexus:/nexus-data
+    networks:
+      - th_net
+  gitea-db:
+    restart: always
+    image: mysql:8.0.22
+    volumes:
+      - ./vgiteadb:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=$GITEA_DB_ROOT_PW
+      - MYSQL_DATABASE=gitea
+    cap_add:
+      - SYS_NICE
+    networks:
+      - th_net
+  gitea:
+    restart: always
+    depends_on:
+      - gitea-db
+    image: gitea/gitea:1.16.8
+    volumes:
+      - ./vgitea:/data
+    environment:
+      - DB_TYPE=mysql
+      - DB_HOST=gitea-db
+      - DB_NAME=gitea
+      - DB_USER=root
+      - DB_PASSWD=GITEA_DB_ROOT_PW
+    networks:
+      - th_net
+  drone:
+    image: drone/drone:2
+    restart: always
+    environment:
+      - DRONE_GITEA_CLIENT_ID=$GITEA_CLIENT_ID
+      - DRONE_GITEA_SERVER=$GITEA_SERVER
+      - DRONE_GITEA_CLIENT_SECRET=$GITEA_CLIENT_SECRET
+      - DRONE_RPC_SECRET=$DRONE_RPC_SECRET
+      - DRONE_SERVER_HOST=$DRONE_SERVER_HOST
+      - DRONE_SERVER_PROTO=https
+    volumes:
+      - ./vdrone:/data
+    networks:
+      - th_net
+  drone-runner:
+    image: drone/drone-runner-docker:1.8.2
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DRONE_RPC_SECRET=$DRONE_RPC_SECRET
+      - DRONE_RPC_PROTO=https
+      - DRONE_RPC_HOST=$DRONE_SERVER_HOST
+    networks:
+      - th_net
+  drone-runner-ssh:
+    image: drone/drone-runner-ssh
+    restart: always
+    environment:
+      - DRONE_RPC_PROTO=https
+      - DRONE_RPC_HOST=$DRONE_SERVER_HOST
+      - DRONE_RPC_SECRET=$DRONE_RPC_SECRET
+    networks:
+      - th_net
+  doc-database:
+    image: postgres:13.4-alpine
+    environment:
+      - POSTGRES_USER=hedgedoc
+      - POSTGRES_PASSWORD=$DOC_DB_PW
+      - POSTGRES_DB=hedgedoc
+    volumes:
+      - ./vdocdb:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - th_net
+  doc:
+    image: quay.io/hedgedoc/hedgedoc:1.9.6
+    environment:
+      - CMD_DB_URL=postgres://hedgedoc:$DOC_DB_PW@doc-database:5432/hedgedoc
+      - CMD_DOMAIN=$DOC_DOMAIN
+      - CMD_URL_ADDPORT=false
+      - CMD_PORT=3123
+      - CMD_PROTOCOL_USESSL=true
+    volumes:
+      - ./vdocuploads:/hedgedoc/public/uploads
+    restart: always
+    depends_on:
+      - doc-database
+    networks:
+      - th_net
+  nginx:
+    restart: always
+    image: linuxserver/letsencrypt
+    volumes:
+      - ./vnginx:/config
+    ports:
+      - "185.216.178.129:80:80"
+      - "185.216.178.129:443:443"
+    environment:
+      - URL=tobias-huebner.tech
+      - SUBDOMAINS=loki,grafana,drone,archive,doc,gitea,nexus,wiki,www,blog,drone
+    networks:
+      - th_net
+
+networks:
+  th_net:
+    external: true
+
+volumes:
+  vgrafana:

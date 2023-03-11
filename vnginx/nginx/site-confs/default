@@ -1,0 +1,199 @@
+map $http_upgrade $connection_upgrade {
+  default upgrade;
+  '' close;
+}
+
+server {
+
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    client_max_body_size 1G;
+
+    server_name grafana.tobias-huebner.tech;
+
+    include /config/nginx/ssl.conf;
+
+    location / {
+        proxy_set_header Host $http_host;
+        set $endpoint http://grafana:3000;
+        proxy_pass $endpoint$request_uri;
+    }
+
+    location /api/datasources {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $http_host;
+        set $endpoint http://grafana:3000;
+        proxy_pass $endpoint$request_uri;
+    }
+
+    location /api/live {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $http_host;
+        set $endpoint http://grafana:3000;
+        proxy_pass $endpoint$request_uri;
+    }
+
+}
+
+server {
+
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    client_max_body_size 1G;
+
+    server_name loki.tobias-huebner.tech;
+
+    include /config/nginx/ssl.conf;
+
+    location / {
+        auth_basic "loki log dump";
+        auth_basic_user_file /config/htpasswd/loki;
+        set $endpoint http://loki:3100;
+        proxy_pass $endpoint$request_uri;
+    }
+    
+}
+
+
+server {
+
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    client_max_body_size 1G;
+
+    server_name doc.tobias-huebner.tech;
+
+    include /config/nginx/ssl.conf;
+
+    location / {
+        set $endpoint http://doc:3123;
+        proxy_pass $endpoint$request_uri;
+  proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+
+server {
+
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    client_max_body_size 1G;
+
+    server_name gitea.tobias-huebner.tech;
+
+    include /config/nginx/ssl.conf;
+
+    location / {
+        set $endpoint http://gitea:3000;
+        proxy_pass $endpoint$request_uri;
+    }
+}
+
+server {
+
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    server_name nexus.tobias-huebner.tech;
+
+    client_max_body_size 1G;
+
+    include /config/nginx/ssl.conf;
+    location / {
+    # needs to be a variable so that the resolver kicks in, weird but that it is what it is
+        set $endpoint http://nexus;
+        proxy_pass $endpoint:8081$request_uri;
+
+        # tobias huebner docker registry listens on 8090
+        if ($http_user_agent ~ docker ) {
+            proxy_pass $endpoint:8090$request_uri;
+        }
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto "https";
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    include /config/nginx/ssl.conf;
+    server_name drone.tobias-huebner.tech;
+
+    location / {
+        set $endpoint http://drone;
+        proxy_pass $endpoint$request_uri;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+    }
+}
+
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    include /config/nginx/ssl.conf;
+    server_name wiki.tobias-huebner.tech;
+
+    location / {
+        set $endpoint http://wiki;
+        proxy_pass $endpoint$request_uri;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+
+server {
+  listen 443 ssl;
+  listen [::]:443 ssl;
+
+  server_name blog.tobias-huebner.tech;
+
+  client_max_body_size 1G;
+
+  include /config/nginx/ssl.conf;
+  location / {
+    # needs to be a variable so that the resolver kicks in, weird but that it is what it is
+    set $endpoint http://ghost:2368;
+    proxy_pass $endpoint$request_uri;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto "https";
+  }
+}
+
+server {
+
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  client_max_body_size 1G;
+  server_name tobias-huebner.tech;
+  include /config/nginx/ssl.conf;
+
+  location = / {
+      return 301 https://tobias-huebner.tech/lang/de/;
+  }
+  location / {
+      set $endpoint http://coverpage;
+      proxy_pass $endpoint$request_uri;
+  }
+  location /api {
+      set $endpoint http://th-api;
+      proxy_pass $endpoint$request_uri;
+  }
+}
+
