@@ -184,15 +184,12 @@ server {
   server_name tobias-huebner.tech;
   include /config/nginx/ssl.conf;
 
-  location = / {
-      return 301 https://tobias-huebner.tech/lang/de/;
-  }
   location / {
-      set $endpoint http://coverpage;
+      set $endpoint http://pf-frontend;
       proxy_pass $endpoint$request_uri;
   }
-  location /api {
-      set $endpoint http://th-api;
+  location /stats {
+      set $endpoint http://pf-api;
       proxy_pass $endpoint$request_uri;
   }
 }
