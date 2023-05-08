@@ -1,5 +1,7 @@
 # Project
 
+!! when editing you need to edit the template each time and regenerate it with the command.
+
 This contains the compose definition for my private website stack. It follows the same design patterns as [JitcomHostedServices](https://github.com/tobi97h/JitcomHostedServices).
 
 The following services are contained in this repository:
