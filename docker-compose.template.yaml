@@ -33,7 +33,7 @@ services:
     expose:
       - 9090
     networks:
-      - monitoring
+      - th_net
   loki:
     restart: always
     image: grafana/loki:2.6.1
