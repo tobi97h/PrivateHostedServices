@@ -23,7 +23,7 @@ services:
     restart: always
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
+      - vprometheus:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -202,3 +202,4 @@ networks:
 
 volumes:
   vgrafana:
+  vprometheus:
