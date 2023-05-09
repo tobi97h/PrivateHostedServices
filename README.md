@@ -8,6 +8,7 @@ The following services are contained in this repository:
 
 * Loki
 * Grafana
+* Prometheus + Node Exporter
 * Personal portfolio page
 * Ghost blog
 * Personal Api
@@ -65,7 +66,9 @@ services:
         loki-retries: 3
 ```
 
-Where `${loki_sink}` is an environmental variable that contains the url to your loki instance, including the access credentials.
+Where `${loki_sink}` is an environmental variable that contains the url to your loki instance, including the htpasswd access credentials.
+
+They are stored in `vnginx/htpasswd/loki`, and can be generated using any htpasswd generator / http basic auth tutorial for generating.
 
 The url looks like this for example `https://lokilog:123password@loki.tobias-huebner.tech/loki/api/v1/push`
 
